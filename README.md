@@ -31,10 +31,7 @@ The processing steps are the following:
 8. The waypoints and the MPC results are pushed into the respective vectors (next_..._vals and mpc_..._vals resectively)
 
 ## MPC Algorithm
-The MPC algorithm implemented follows pretty much the algorithm outlined in the lectures with one addition: The previous steering & acceleration values are provided from the main.cpp in order to cater for the 100ms delay between calculation and actuation.
-
-In particular this means the following main steps:
-1. 
+The MPC algorithm implemented follows pretty much the algorithm outlined in the lectures with one addition: The previous steering & acceleration values are provided from the main.cpp in order to cater for the 100ms delay between calculation and actuation. The class FG_Eval contains the cost function and the car's physical constraints. The MPC Solve function contains additional actuator constraints and solves the optimization problem usig the IPOpt library.
 
 ### Cost function
 
@@ -50,7 +47,23 @@ The cost function to be minimized consists of the following:
 ### Constraints
 The car is constrained by its physical model:
 ```
+x_[t+1] = x[t] + v[t] * cos(psi[t]) * dt
+y_[t+1] = y[t] + v[t] * sin(psi[t]) * dt
+psi_[t+1] = psi[t] + v[t] / Lf * delta[t] * dt
+v_[t+1] = v[t] + a[t] * dt
+cte[t+1] = f(x[t]) - y[t] + v[t] * sin(epsi[t]) * dt
+epsi[t+1] = psi[t] - psides[t] + v[t] * delta[t] / Lf * dt
+```
 
+In addition the actuators (steering & acceleration) have additional constraints, namely:
+```
+steering between -25 / +25 degrees --> -0.436332 / 0.436332 in rad
+for the initial 2 steps (2 * 0.05s = 100 ms), the steering is equal to previous steering (due to the latency)
+
+acceleration between -1 / +1
+for the initial 2 steps (2 * 0.05s = 100 ms), the acceleration is equal to previous acceleration (due to the latency)
+
+all other values (x, y, psi, v, cte, psi) initial state upper & lower constraint is the current state
 ```
 
 ### Hyperparameters & Tuning
